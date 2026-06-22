@@ -51,10 +51,34 @@ productos_seleccionados = st.sidebar.multiselect(
     default=productos_disponibles
 )
 
-# Aplicación final de filtros cruzados al DataFrame
+# Filtro 3: Tiempo (Se adapta dinámicamente según las categorías seleccionadas)
+df_filtrado_temp = df_original[df_original["Categoría"].isin(categorias_seleccionadas)]
+productos_disponibles = df_filtrado_temp["Producto"].unique()
+
+productos_seleccionados = st.sidebar.multiselect(
+    "2. Filtrar por Producto:",
+    options=productos_disponibles,
+    default=productos_disponibles
+)
+
+
+# ---- FILTRO 3: MES / TIEMPO (Depende de Categoría y Producto) ----
+# Filtramos la base de datos temporalmente con las categorías Y productos seleccionados
+df_temp_meses = df_temp_productos[df_temp_productos["Producto"].isin(productos_seleccionados)]
+meses_disponibles = df_temp_meses["Mes"].unique()
+
+meses_seleccionados = st.sidebar.multiselect(
+    "3. Filtrar por Período (Mes):",
+    options=meses_disponibles,
+    default=meses_disponibles
+)
+
+# ---- APLICACIÓN FINAL DE FILTROS CRUZADOS ----
+# Este es el DataFrame definitivo que usarán tus gráficos y KPIs
 df_filtrado = df_original[
     (df_original["Categoría"].isin(categorias_seleccionadas)) & 
-    (df_original["Producto"].isin(productos_seleccionados))
+    (df_original["Producto"].isin(productos_seleccionados)) &
+    (df_original["Mes"].isin(meses_seleccionados))
 ]
 # =================================================================
 
