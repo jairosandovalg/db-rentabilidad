@@ -2,52 +2,140 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-st.set_page_config(page_title="Dashboard Mini", layout="wide")
-st.title("📊 Panel de Control Express")
+# 1. Configuración de la página con estilo gerencial
+st.set_page_config(page_title="Cuadro de Mando Gerencial", page_icon="📈", layout="wide")
 
-# 1. Base de datos original
+# Estilo personalizado para mejorar la estética ejecutiva
+st.markdown("""
+    <style>
+    .main {background-color: #f8f9fa;}
+    div[data-testid="stMetricValue"] {font-size: 28px; font-weight: bold; color: #1e3d59;}
+    div[data-testid="stMetricLabel"] {font-size: 14px; color: #6c757d;}
+    </style>
+""", unsafe_with_html=True)
+
+st.title("📊 Cuadro de Mando Gerencial")
+st.markdown("### Resumen Ejecutivo de Ventas y Rendimiento Operativo")
+st.write("---")
+
+# 2. Base de datos ampliada (Con Categorías y Meses para la tendencia)
 datos = {
-    "Producto": ["Laptops", "Teclados", "Monitores", "Mouses"],
-    "Ventas_USD": [15000, 2500, 8000, 1200],
-    "Unidades": [15, 80, 30, 65]
+    "Producto": ["Laptops", "Teclados", "Monitores", "Mouses", "Laptops", "Teclados", "Monitores", "Mouses"],
+    "Categoría": ["Hardware", "Periféricos", "Hardware", "Periféricos", "Hardware", "Periféricos", "Hardware", "Periféricos"],
+    "Mes": ["Enero", "Enero", "Enero", "Enero", "Febrero", "Febrero", "Febrero", "Febrero"],
+    "Ventas_USD": [15000, 2500, 8000, 1200, 18500, 2900, 9200, 1100],
+    "Unidades": [15, 80, 30, 65, 18, 92, 35, 60]
 }
 df_original = pd.DataFrame(datos)
 
 # =================================================================
-# 🔥 NUEVA SECCIÓN: FILTROS EN LA BARRA LATERAL (SIDEBAR)
+# 🎯 SECCIÓN: FILTROS MULTIDIMENSIONALES (BARRA LATERAL)
 # =================================================================
-st.sidebar.header("🎯 Filtros del Dashboard")
+st.sidebar.header("🕹️ Panel de Control Ejecutivos")
 
-# Selector múltiple que toma los productos únicos de nuestra base de datos
-productos_seleccionados = st.sidebar.multiselect(
-    "Selecciona los productos a mostrar:",
-    options=df_original["Producto"].unique(),
-    default=df_original["Producto"].unique() # Por defecto, todos seleccionados
+# Filtro 1: Categorías
+categorias_disponibles = df_original["Categoría"].unique()
+categorias_seleccionadas = st.sidebar.multiselect(
+    "1. Filtrar por Categoría:",
+    options=categorias_disponibles,
+    default=categorias_disponibles
 )
 
-# Aplicamos el filtro al DataFrame original para crear un DataFrame filtrado
-df_filtrado = df_original[df_original["Producto"].isin(productos_seleccionados)]
+# Filtro 2: Productos (Se adapta dinámicamente según las categorías seleccionadas)
+df_filtrado_temp = df_original[df_original["Categoría"].isin(categorias_seleccionadas)]
+productos_disponibles = df_filtrado_temp["Producto"].unique()
+
+productos_seleccionados = st.sidebar.multiselect(
+    "2. Filtrar por Producto:",
+    options=productos_disponibles,
+    default=productos_disponibles
+)
+
+# Aplicación final de filtros cruzados
+df_filtrado = df_original[
+    (df_original["Categoría"].isin(categorias_seleccionadas)) & 
+    (df_original["Producto"].isin(productos_seleccionados))
+]
 # =================================================================
 
-st.write("---")
-
-# Validación: Si hay al menos un producto seleccionado, muestra el dashboard
+# Validación de seguridad de datos
 if not df_filtrado.empty:
     
-    # 2. Métricas basadas en los datos filtrados
-    col1, col2 = st.columns(2)
-    col1.metric(label="💰 Ingresos Totales", value=f"${df_filtrado['Ventas_USD'].sum():,}")
-    col2.metric(label="📦 Total Unidades", value=f"{df_filtrado['Unidades'].sum():,}")
+    # =================================================================
+    # 🧮 CAPA DE KPIs (Métricas Principales de Alto Nivel)
+    # =================================================================
+    # Cálculos globales automáticos
+    total_ingresos = df_filtrado["Ventas_USD"].sum()
+    total_unidades = df_filtrado["Unidades"].sum()
+    ticket_promedio = df_filtrado["Ventas_USD"].sum() / df_filtrado["Unidades"].sum() if total_unidades > 0 else 0
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric(label="💰 INGRESOS TOTALES (USD)", value=f"${total_ingresos:,.2f}")
+    with col2:
+        st.metric(label="📦 VOLUMEN DE VENTAS (UNIDADES)", value=f"{total_unidades:,} und")
+    with col3:
+        st.metric(label="🎫 TICKET PROMEDIO POR UNIDAD", value=f"${ticket_promedio:,.2f}")
     
     st.write("---")
 
-    # 3. Gráfico basado en los datos filtrados
-    fig = px.bar(df_filtrado, x="Producto", y="Ventas_USD", text_auto=True, title="Ventas por Producto Seleccionado")
-    st.plotly_chart(fig, use_container_width=True)
+    # =================================================================
+    # 📊 SECCIÓN ANALÍTICA (Distribución, Comparativa y Tendencia)
+    # =================================================================
+    fila_graficos1, fila_graficos2 = st.columns([1, 1])
     
-    # 4. Tabla de datos (Opcional, pero útil para verificar el filtro)
-    st.dataframe(df_filtrado, use_container_width=True, hide_index=True)
+    with fila_graficos1:
+        st.subheader("🍰 Participación Comercial por Categoría")
+        # Gráfico Circular / Donut moderno
+        fig_circular = px.pie(
+            df_filtrado, 
+            values="Ventas_USD", 
+            names="Categoría", 
+            hole=0.4,
+            color_discrete_sequence=px.colors.qualitative.Safe
+        )
+        fig_circular.update_traces(textinfo="percent+label")
+        st.plotly_chart(fig_circular, use_container_width=True)
+        
+    with fila_graficos2:
+        st.subheader("📈 Tendencia Temporal de Ventas")
+        # Aseguramos el orden cronológico básico para el gráfico de líneas
+        df_tendencia = df_filtrado.groupby("Mes")["Ventas_USD"].sum().reindex(["Enero", "Febrero"]).reset_index()
+        fig_linea = px.line(
+            df_tendencia, 
+            x="Mes", 
+            y="Ventas_USD", 
+            markers=True,
+            labels={"Ventas_USD": "Ingresos (USD)", "Mes": "Período"},
+            color_discrete_sequence=["#1e3d59"]
+        )
+        st.plotly_chart(fig_linea, use_container_width=True)
+
+    st.write("---")
+    
+    # Gráfico de barras original mejorado
+    st.subheader("📊 Rendimiento Individual por Línea de Producto")
+    fig_barras = px.bar(
+        df_filtrado, 
+        x="Producto", 
+        y="Ventas_USD", 
+        color="Mes",
+        barmode="group",
+        text_auto=True,
+        color_discrete_sequence=["#17b978", "#a6f6f1"]
+    )
+    st.plotly_chart(fig_barras, use_container_width=True)
+
+    # =================================================================
+    # 📋 DETALLE OPERATIVO (Tabla de Datos Auditable)
+    # =================================================================
+    st.write("---")
+    with st.expander("🔍 Ver Registro de Datos Operativos Completo"):
+        st.dataframe(
+            df_filtrado.sort_values(by="Ventas_USD", ascending=False), 
+            use_container_width=True, 
+            hide_index=True
+        )
 
 else:
-    # Mensaje de advertencia si el usuario desmarca absolutamente todo
-    st.warning("⚠️ Por favor, selecciona al menos un producto en la barra lateral para visualizar el dashboard.")
+    st.warning("⚠️ Sin datos consolidados. Modifica la combinación de filtros en la barra lateral para recalcular el modelo gerencial.")
