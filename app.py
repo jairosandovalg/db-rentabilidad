@@ -2,23 +2,23 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# 1. Configuración de la página con estilo gerencial
+# 1. Configuración de la página con estilo gerencial (Debe ser la primera línea)
 st.set_page_config(page_title="Cuadro de Mando Gerencial", page_icon="📈", layout="wide")
 
-# Estilo personalizado para mejorar la estética ejecutiva
+# Estilo personalizado para mejorar la estética ejecutiva (CORREGIDO)
 st.markdown("""
     <style>
     .main {background-color: #f8f9fa;}
     div[data-testid="stMetricValue"] {font-size: 28px; font-weight: bold; color: #1e3d59;}
     div[data-testid="stMetricLabel"] {font-size: 14px; color: #6c757d;}
     </style>
-""", unsafe_with_html=True)
+""", unsafe_allow_html=True)
 
 st.title("📊 Cuadro de Mando Gerencial")
 st.markdown("### Resumen Ejecutivo de Ventas y Rendimiento Operativo")
 st.write("---")
 
-# 2. Base de datos ampliada (Con Categorías y Meses para la tendencia)
+# 2. Base de datos de ejemplo (Con Categorías y Meses para las nuevas dimensiones)
 datos = {
     "Producto": ["Laptops", "Teclados", "Monitores", "Mouses", "Laptops", "Teclados", "Monitores", "Mouses"],
     "Categoría": ["Hardware", "Periféricos", "Hardware", "Periféricos", "Hardware", "Periféricos", "Hardware", "Periféricos"],
@@ -51,20 +51,19 @@ productos_seleccionados = st.sidebar.multiselect(
     default=productos_disponibles
 )
 
-# Aplicación final de filtros cruzados
+# Aplicación final de filtros cruzados al DataFrame
 df_filtrado = df_original[
     (df_original["Categoría"].isin(categorias_seleccionadas)) & 
     (df_original["Producto"].isin(productos_seleccionados))
 ]
 # =================================================================
 
-# Validación de seguridad de datos
+# Validación de seguridad de datos: Si el usuario desmarca todo, no se rompe la app
 if not df_filtrado.empty:
     
     # =================================================================
     # 🧮 CAPA DE KPIs (Métricas Principales de Alto Nivel)
     # =================================================================
-    # Cálculos globales automáticos
     total_ingresos = df_filtrado["Ventas_USD"].sum()
     total_unidades = df_filtrado["Unidades"].sum()
     ticket_promedio = df_filtrado["Ventas_USD"].sum() / df_filtrado["Unidades"].sum() if total_unidades > 0 else 0
@@ -82,11 +81,11 @@ if not df_filtrado.empty:
     # =================================================================
     # 📊 SECCIÓN ANALÍTICA (Distribución, Comparativa y Tendencia)
     # =================================================================
-    fila_graficos1, fila_graficos2 = st.columns([1, 1])
+    fila_graficos1, fila_graficos2 = st.columns(2)
     
     with fila_graficos1:
         st.subheader("🍰 Participación Comercial por Categoría")
-        # Gráfico Circular / Donut moderno
+        # Gráfico Circular tipo Donut
         fig_circular = px.pie(
             df_filtrado, 
             values="Ventas_USD", 
@@ -99,7 +98,7 @@ if not df_filtrado.empty:
         
     with fila_graficos2:
         st.subheader("📈 Tendencia Temporal de Ventas")
-        # Aseguramos el orden cronológico básico para el gráfico de líneas
+        # Agrupación por mes para la línea de tendencia
         df_tendencia = df_filtrado.groupby("Mes")["Ventas_USD"].sum().reindex(["Enero", "Febrero"]).reset_index()
         fig_linea = px.line(
             df_tendencia, 
@@ -113,7 +112,7 @@ if not df_filtrado.empty:
 
     st.write("---")
     
-    # Gráfico de barras original mejorado
+    # Gráfico de barras comparativo por producto y mes
     st.subheader("📊 Rendimiento Individual por Línea de Producto")
     fig_barras = px.bar(
         df_filtrado, 
@@ -127,7 +126,7 @@ if not df_filtrado.empty:
     st.plotly_chart(fig_barras, use_container_width=True)
 
     # =================================================================
-    # 📋 DETALLE OPERATIVO (Tabla de Datos Auditable)
+    # 📋 DETALLE OPERATIVO (Tabla de Datos Auditable Oculta)
     # =================================================================
     st.write("---")
     with st.expander("🔍 Ver Registro de Datos Operativos Completo"):
