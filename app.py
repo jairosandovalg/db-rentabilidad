@@ -5,7 +5,7 @@ import plotly.express as px
 # 1. Configuración de la página con estilo gerencial (Debe ser la primera línea)
 st.set_page_config(page_title="Cuadro de Mando Gerencial", page_icon="📈", layout="wide")
 
-# Estilo personalizado para mejorar la estética ejecutiva (CORREGIDO)
+# Estilo personalizado para mejorar la estética ejecutiva
 st.markdown("""
     <style>
     .main {background-color: #f8f9fa;}
@@ -29,11 +29,11 @@ datos = {
 df_original = pd.DataFrame(datos)
 
 # =================================================================
-# 🎯 SECCIÓN: FILTROS MULTIDIMENSIONALES (BARRA LATERAL)
+# 🎯 SECCIÓN: FILTROS MULTIDIMENSIONALES EN CASCADA (BARRA LATERAL)
 # =================================================================
 st.sidebar.header("🕹️ Panel de Control Ejecutivos")
 
-# Filtro 1: Categorías
+# ---- FILTRO 1: CATEGORÍAS ----
 categorias_disponibles = df_original["Categoría"].unique()
 categorias_seleccionadas = st.sidebar.multiselect(
     "1. Filtrar por Categoría:",
@@ -41,9 +41,10 @@ categorias_seleccionadas = st.sidebar.multiselect(
     default=categorias_disponibles
 )
 
-# Filtro 2: Productos (Se adapta dinámicamente según las categorías seleccionadas)
-df_filtrado_temp = df_original[df_original["Categoría"].isin(categorias_seleccionadas)]
-productos_disponibles = df_filtrado_temp["Producto"].unique()
+# ---- FILTRO 2: PRODUCTOS (Depende de Categoría) ----
+# Usamos el DataFrame original filtrado por las categorías seleccionadas
+df_filtrado_productos = df_original[df_original["Categoría"].isin(categorias_seleccionadas)]
+productos_disponibles = df_filtrado_productos["Producto"].unique()
 
 productos_seleccionados = st.sidebar.multiselect(
     "2. Filtrar por Producto:",
@@ -52,9 +53,9 @@ productos_seleccionados = st.sidebar.multiselect(
 )
 
 # ---- FILTRO 3: MES / TIEMPO (Depende de Categoría y Producto) ----
-# Filtramos la base de datos temporalmente con las categorías Y productos seleccionados
-df_temp_meses = df_temp_productos[df_temp_productos["Producto"].isin(productos_seleccionados)]
-meses_disponibles = df_temp_meses["Mes"].unique()
+# CORREGIDO: Usamos el DataFrame del paso anterior filtrado por los productos seleccionados
+df_filtrado_meses = df_filtrado_productos[df_filtrado_productos["Producto"].isin(productos_seleccionados)]
+meses_disponibles = df_filtrado_meses["Mes"].unique()
 
 meses_seleccionados = st.sidebar.multiselect(
     "3. Filtrar por Período (Mes):",
@@ -98,7 +99,6 @@ if not df_filtrado.empty:
     
     with fila_graficos1:
         st.subheader("🍰 Participación Comercial por Categoría")
-        # Gráfico Circular tipo Donut
         fig_circular = px.pie(
             df_filtrado, 
             values="Ventas_USD", 
@@ -111,8 +111,14 @@ if not df_filtrado.empty:
         
     with fila_graficos2:
         st.subheader("📈 Tendencia Temporal de Ventas")
-        # Agrupación por mes para la línea de tendencia
-        df_tendencia = df_filtrado.groupby("Mes")["Ventas_USD"].sum().reindex(["Enero", "Febrero"]).reset_index()
+        # Agrupación por mes para la línea de tendencia dinámicamente ordenada
+        df_tendencia = df_filtrado.groupby("Mes")["Ventas_USD"].sum().reset_index()
+        
+        # Estabiliza el orden cronológico básico si ambos meses están presentes
+        orden_meses = ["Enero", "Febrero"]
+        df_tendencia['Mes'] = pd.Categorical(df_tendencia['Mes'], categories=orden_meses, ordered=True)
+        df_tendencia = df_tendencia.sort_values('Mes')
+
         fig_linea = px.line(
             df_tendencia, 
             x="Mes", 
