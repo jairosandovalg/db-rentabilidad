@@ -1,71 +1,35 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import plotly.express as px
 
-# 1. Configuración de la página (Debe ser la primera línea de Streamlit)
-st.set_page_config(
-    page_title="Dashboard Comercial de Pruebas",
-    page_icon="📊",
-    layout="wide" # Configura la app en pantalla ancha
-)
-
-# 2. Título principal de la aplicación
-st.title("📊 Dashboard de Rendimiento Comercial")
-st.markdown("Bienvenido al panel de control simplificado. Los datos se actualizan dinámicamente según los filtros.")
+# 1. Configuración básica inicial
+st.set_page_config(page_title="Dashboard Mini", layout="wide")
+st.title("📊 Panel de Control Express")
+st.write("Carga ultra rápida sin procesos pesados en segundo plano.")
 st.write("---")
 
-# 3. Simulación de datos (Simulamos un histórico de ventas)
-@st.cache_data
-def generar_datos_simulados():
-    np.random.seed(42)
-    fechas = pd.date_range(start="2026-01-01", end="2026-06-20", freq="D")
-    regiones = ["Norte", "Sur", "Centro", "Este"]
-    productos = ["Laptops", "Teclados", "Monitores", "Mouses"]
-    
-    datos = []
-    for fecha in fechas:
-        for _ in range(np.random.randint(1, 5)): # Entre 1 y 4 ventas por día
-            datos.append({
-                "Fecha": fecha,
-                "Región": np.random.choice(regiones),
-                "Producto": np.random.choice(productos),
-                "Monto": round(np.random.uniform(50, 1200), 2),
-                "Cantidad": np.random.randint(1, 5)
-            })
-    return pd.DataFrame(datos)
+# 2. Datos mínimos fijos (Evita que Python trabaje de más)
+datos = {
+    "Producto": ["Laptops", "Teclados", "Monitores", "Mouses"],
+    "Ventas_USD": [15000, 2500, 8000, 1200],
+    "Unidades": [15, 80, 30, 65]
+}
+df = pd.DataFrame(datos)
 
-df_original = generar_datos_simulados()
+# 3. Mostrar Métricas en columnas inmediatas
+col1, col2 = st.columns(2)
+with col1:
+    st.metric(label="💰 Ingresos Totales", value=f"${df['Ventas_USD'].sum():,}")
+with col2:
+    st.metric(label="📦 Total Unidades", value=f"{df['Unidades'].sum():,}")
 
-# 4. Barra Lateral (Sidebar) para los Filtros
-st.sidebar.header("🎯 Filtros Disponibles")
+st.write("---")
 
-# Filtro de Región
-lista_regiones = df_original["Región"].unique()
-regiones_seleccionadas = st.sidebar.multiselect(
-    "Selecciona la(s) Región(es):",
-    options=lista_regiones,
-    default=lista_regiones # Por defecto seleccionamos todas
-)
+# 4. Un solo gráfico rápido de barras
+st.subheader("📈 Ventas por Categoría")
+fig = px.bar(df, x="Producto", y="Ventas_USD", text_auto=True)
+st.plotly_chart(fig, use_container_width=True)
 
-# Filtro de Producto
-lista_productos = df_original["Producto"].unique()
-productos_seleccionados = st.sidebar.multiselect(
-    "Selecciona el o los Productos:",
-    options=lista_productos,
-    default=lista_productos
-)
-
-# Aplicar los filtros al DataFrame original
-df_filtrado = df_original[
-    (df_original["Región"].isin(regiones_seleccionadas)) & 
-    (df_original["Producto"].isin(productos_seleccionados))
-]
-
-# 5. Sección de Métricas Clave (KPIs) en columnas
-if not df_filtrado.empty:
-    col1, col2, col3, col4 = st.columns(4)
-    
-    # Cálculos dinámicos
-    total_ventas = df_filtrado["Monto"].sum()
-    total_un
+# 5. Tabla de datos simple
+st.subheader("📋 Datos Base")
+st.dataframe(df, use_container_width=True, hide_index=True)
