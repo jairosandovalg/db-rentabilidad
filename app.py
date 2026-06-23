@@ -5,7 +5,7 @@ import plotly.express as px
 # 1. Configuración de la página con estilo gerencial (Debe ser la primera línea)
 st.set_page_config(page_title="Cuadro de Mando Gerencial", 
                    page_icon="📈", 
-                   layout="centered")    #wide = ancho / centered = centrado
+                   layout="wide")                            #wide = ancho / centered = centrado
 
 # Estilo personalizado para mejorar la estética ejecutiva
 st.markdown("""
