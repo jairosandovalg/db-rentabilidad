@@ -2,31 +2,15 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# 1. Configuración de la página (Debe ser la primera línea)
+# 1. Configuración de la página con estilo gerencial (Debe ser la primera línea)
 st.set_page_config(page_title="Cuadro de Mando Gerencial", page_icon="📈", layout="wide")
 
-# Estilo CSS personalizado para forzar el Modo Oscuro Premium
+# Estilo personalizado para mejorar la estética ejecutiva
 st.markdown("""
     <style>
-    /* Fondo principal y barra lateral */
-    .stApp {background-color: #0E1117; color: #FFFFFF;}
-    [data-testid="stSidebar"] {background-color: #161B22; border-right: 1px solid #30363D;}
-    
-    /* Títulos y textos generales */
-    h1, h2, h3, p {color: #FFFFFF !important;}
-    
-    /* Tarjetas de Métricas (KPIs) en Fondo Oscuro */
-    div[data-testid="stMetricValue"] {font-size: 30px; font-weight: bold; color: #58A6FF;}
-    div[data-testid="stMetricLabel"] {font-size: 14px; color: #8B949E;}
-    div[data-testid="metric-container"] {
-        background-color: #161B22; 
-        border: 1px solid #30363D; 
-        padding: 15px 20px; 
-        border-radius: 10px;
-    }
-    
-    /* Líneas divisorias */
-    hr {border-top: 1px solid #30363D;}
+    .main {background-color: #f8f9fa;}
+    div[data-testid="stMetricValue"] {font-size: 28px; font-weight: bold; color: #1e3d59;}
+    div[data-testid="stMetricLabel"] {font-size: 14px; color: #6c757d;}
     </style>
 """, unsafe_allow_html=True)
 
@@ -34,7 +18,7 @@ st.title("📊 Cuadro de Mando Gerencial")
 st.markdown("### Resumen Ejecutivo de Ventas y Rendimiento Operativo")
 st.write("---")
 
-# 2. Base de datos de ejemplo
+# 2. Base de datos de ejemplo (Con Categorías y Meses para las nuevas dimensiones)
 datos = {
     "Producto": ["Laptops", "Teclados", "Monitores", "Mouses", "Laptops", "Teclados", "Monitores", "Mouses"],
     "Categoría": ["Hardware", "Periféricos", "Hardware", "Periféricos", "Hardware", "Periféricos", "Hardware", "Periféricos"],
@@ -47,7 +31,7 @@ df_original = pd.DataFrame(datos)
 # =================================================================
 # 🎯 SECCIÓN: FILTROS MULTIDIMENSIONALES EN CASCADA (BARRA LATERAL)
 # =================================================================
-st.sidebar.header("🕹️ Panel de Control Ejecutivo")
+st.sidebar.header("🕹️ Panel de Control Ejecutivos")
 
 # ---- FILTRO 1: CATEGORÍAS ----
 categorias_disponibles = df_original["Categoría"].unique()
@@ -58,6 +42,7 @@ categorias_seleccionadas = st.sidebar.multiselect(
 )
 
 # ---- FILTRO 2: PRODUCTOS (Depende de Categoría) ----
+# Usamos el DataFrame original filtrado por las categorías seleccionadas
 df_filtrado_productos = df_original[df_original["Categoría"].isin(categorias_seleccionadas)]
 productos_disponibles = df_filtrado_productos["Producto"].unique()
 
@@ -68,6 +53,7 @@ productos_seleccionados = st.sidebar.multiselect(
 )
 
 # ---- FILTRO 3: MES / TIEMPO (Depende de Categoría y Producto) ----
+# CORREGIDO: Usamos el DataFrame del paso anterior filtrado por los productos seleccionados
 df_filtrado_meses = df_filtrado_productos[df_filtrado_productos["Producto"].isin(productos_seleccionados)]
 meses_disponibles = df_filtrado_meses["Mes"].unique()
 
@@ -78,6 +64,7 @@ meses_seleccionados = st.sidebar.multiselect(
 )
 
 # ---- APLICACIÓN FINAL DE FILTROS CRUZADOS ----
+# Este es el DataFrame definitivo que usarán tus gráficos y KPIs
 df_filtrado = df_original[
     (df_original["Categoría"].isin(categorias_seleccionadas)) & 
     (df_original["Producto"].isin(productos_seleccionados)) &
@@ -85,10 +72,11 @@ df_filtrado = df_original[
 ]
 # =================================================================
 
+# Validación de seguridad de datos: Si el usuario desmarca todo, no se rompe la app
 if not df_filtrado.empty:
     
     # =================================================================
-    # 🧮 CAPA DE KPIs (Fondo Oscuro estilizado vía CSS superior)
+    # 🧮 CAPA DE KPIs (Métricas Principales de Alto Nivel)
     # =================================================================
     total_ingresos = df_filtrado["Ventas_USD"].sum()
     total_unidades = df_filtrado["Unidades"].sum()
@@ -105,7 +93,7 @@ if not df_filtrado.empty:
     st.write("---")
 
     # =================================================================
-    # 📊 SECCIÓN ANALÍTICA (Gráficos adaptados a modo oscuro)
+    # 📊 SECCIÓN ANALÍTICA (Distribución, Comparativa y Tendencia)
     # =================================================================
     fila_graficos1, fila_graficos2 = st.columns(2)
     
@@ -116,23 +104,17 @@ if not df_filtrado.empty:
             values="Ventas_USD", 
             names="Categoría", 
             hole=0.4,
-            color_discrete_sequence=["#1F77B4", "#FF7F0E"] # Colores limpios y legibles
+            color_discrete_sequence=px.colors.qualitative.Safe
         )
         fig_circular.update_traces(textinfo="percent+label")
-        
-        # Ajuste de Layout para Fondo Oscuro
-        fig_circular.update_layout(
-            template="plotly_dark",
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            font=dict(color="#FFFFFF")
-        )
         st.plotly_chart(fig_circular, use_container_width=True)
         
     with fila_graficos2:
         st.subheader("📈 Tendencia Temporal de Ventas")
+        # Agrupación por mes para la línea de tendencia dinámicamente ordenada
         df_tendencia = df_filtrado.groupby("Mes")["Ventas_USD"].sum().reset_index()
         
+        # Estabiliza el orden cronológico básico si ambos meses están presentes
         orden_meses = ["Enero", "Febrero"]
         df_tendencia['Mes'] = pd.Categorical(df_tendencia['Mes'], categories=orden_meses, ordered=True)
         df_tendencia = df_tendencia.sort_values('Mes')
@@ -143,23 +125,13 @@ if not df_filtrado.empty:
             y="Ventas_USD", 
             markers=True,
             labels={"Ventas_USD": "Ingresos (USD)", "Mes": "Período"},
-            color_discrete_sequence=["#58A6FF"] # Azul Neón Eléctrico
-        )
-        
-        # Ajuste de Layout para Fondo Oscuro
-        fig_linea.update_layout(
-            template="plotly_dark",
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            font=dict(color="#FFFFFF"),
-            xaxis=dict(showgrid=False),
-            yaxis=dict(showgrid=True, gridcolor="#30363D")
+            color_discrete_sequence=["#1e3d59"]
         )
         st.plotly_chart(fig_linea, use_container_width=True)
 
     st.write("---")
     
-    # Gráfico de barras comparativo
+    # Gráfico de barras comparativo por producto y mes
     st.subheader("📊 Rendimiento Individual por Línea de Producto")
     fig_barras = px.bar(
         df_filtrado, 
@@ -168,22 +140,12 @@ if not df_filtrado.empty:
         color="Mes",
         barmode="group",
         text_auto=True,
-        color_discrete_sequence=["#238636", "#1F6FEB"] # Verde y Azul corporativo Cyberpunk
-    )
-    
-    # Ajuste de Layout para Fondo Oscuro
-    fig_barras.update_layout(
-        template="plotly_dark",
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(color="#FFFFFF"),
-        xaxis=dict(showgrid=False),
-        yaxis=dict(showgrid=True, gridcolor="#30363D")
+        color_discrete_sequence=["#17b978", "#a6f6f1"]
     )
     st.plotly_chart(fig_barras, use_container_width=True)
 
     # =================================================================
-    # 📋 DETALLE OPERATIVO (Tabla con tema nativo oscuro)
+    # 📋 DETALLE OPERATIVO (Tabla de Datos Auditable Oculta)
     # =================================================================
     st.write("---")
     with st.expander("🔍 Ver Registro de Datos Operativos Completo"):
